@@ -1,0 +1,82 @@
+div.NotePad {
+	width: 500px;
+	height: 500px;
+	position: relative;
+}
+
+div.NoteList {
+	position: absolute;
+	top: 30px;
+	left: 2px;
+	width: 150px;
+	height: 460px;
+	overflow: auto;
+}
+
+div.NoteList ol {
+	padding: 0;
+	margin: 0px;
+}
+
+div.NoteList li {
+	list-style: none;
+	min-height: 16px;
+	padding: 4px 20px 4px 4px;
+	border: 1px solid #CCC;
+	display: block;
+}
+
+div.NoteList li.selectable {
+    cursor: pointer;	
+}
+
+div.NoteList li.locked {
+    background: url('gfx/lock.png') no-repeat right;
+}
+
+div.NoteList li.active {
+    background: url('gfx/unlock.png') no-repeat right #F0F0F0;
+}
+
+div.NotePad div.NoteEditor {
+    position: absolute;
+    top: 34px;
+    left: 154px;
+    bottom: 0px;
+    right: 0px;
+}
+
+div.NoteEditor input {
+	position: absolute;
+	height: 28px;
+    left: 0;
+    right: 0;
+    top: 0;	
+}
+
+div.NoteEditor textarea {
+	position: absolute;
+	right: 0px;
+	top: 34px;
+	left: 0;
+    right: 0;
+    bottom: 34px;
+    padding: 4px;
+}
+
+div.NoteEditor div.buttons {
+    position: absolute;
+    right: 0px;
+    height: 34px;
+    left: 0;
+    right: 0;
+    bottom: 0px;
+}
+
+div.NotePad div.ui-widget-header {
+	height: 24px;
+	line-height: 24px;
+	padding: 2px;
+	margin: 2px;
+	text-align: center;
+}

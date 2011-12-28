@@ -1,0 +1,8 @@
+.classpath
+
+/profiles/prod/config.properties
+/.settings/*
+/.project
+/target/*
+/.gitignore~
+/src/test/resources/config.properties

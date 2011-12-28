@@ -1,0 +1,24 @@
+div.ProgressHolder {
+    width: 500px;
+    position: relative;
+    min-height: 400px;
+}
+
+div.ProgressHolder button.addButton {
+    position: absolute; 
+    right: 2px;
+    width: 100px;
+}
+
+div.ProgressHolder div.content {
+	margin: 4px;
+}
+
+div.ProgressIndicator {
+    margin: 4px;	
+}
+
+div.ProgressIndicator div.name {
+	padding-left: 2px;
+	font-weight: bold;
+}
