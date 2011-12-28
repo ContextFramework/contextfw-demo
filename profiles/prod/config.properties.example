@@ -1,0 +1,12 @@
+developmentMode=false
+
+host=
+version=
+
+# Mongo database
+
+mongodb.host=
+mongodb.port=
+mongodb.database=
+mongodb.userName=
+mongodb.password=
