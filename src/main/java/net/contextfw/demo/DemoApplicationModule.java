@@ -5,6 +5,7 @@ import static net.contextfw.web.application.configuration.Configuration.DEVELOPM
 import static net.contextfw.web.application.configuration.Configuration.HOST;
 import static net.contextfw.web.application.configuration.Configuration.LIFECYCLE_LISTENER;
 import static net.contextfw.web.application.configuration.Configuration.LOG_XML;
+import static net.contextfw.web.application.configuration.Configuration.MAX_INACTIVITY;
 import static net.contextfw.web.application.configuration.Configuration.RELOADABLE_CLASSES;
 import static net.contextfw.web.application.configuration.Configuration.RESOURCE_PATH;
 import static net.contextfw.web.application.configuration.Configuration.VERSION;
@@ -12,7 +13,6 @@ import static net.contextfw.web.application.configuration.Configuration.VIEW_COM
 import static net.contextfw.web.application.configuration.Configuration.XML_PARAM_NAME;
 import static net.contextfw.web.application.configuration.Configuration.XML_RESPONSE_LOGGER;
 import static net.contextfw.web.application.configuration.Configuration.XSL_POST_PROCESSOR;
-import static net.contextfw.web.application.configuration.Configuration.NAMESPACE;
 
 import java.io.IOException;
 import java.net.URL;
@@ -66,7 +66,7 @@ public class DemoApplicationModule extends AbstractModule {
           .set(DEVELOPMENT_MODE, developmentMode)
           .set(XML_PARAM_NAME, "xml")
           .set(LOG_XML, developmentMode)
-          .add(NAMESPACE.as("widget", DemoPostProcessor.WIDGET_NS))
+          .set(MAX_INACTIVITY.inMinutes(30))
           .set(HOST, properties.getProperty("host"))
           .set(VERSION, properties.getProperty("version"))
           .set(LIFECYCLE_LISTENER.as(DemoLifecycleListener.class))

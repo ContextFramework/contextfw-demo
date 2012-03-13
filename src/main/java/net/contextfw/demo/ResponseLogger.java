@@ -7,7 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import net.contextfw.web.application.util.XMLResponseLogger;
+import net.contextfw.web.application.development.XMLResponseLogger;
 
 /**
  * Provides a simple logging facility for XML responses, so

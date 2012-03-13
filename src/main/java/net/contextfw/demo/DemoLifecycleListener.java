@@ -5,7 +5,7 @@ import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
 
-import net.contextfw.web.application.HttpContext;
+import net.contextfw.web.application.PageContext;
 import net.contextfw.web.application.component.Component;
 import net.contextfw.web.commons.cloud.session.CloudSession;
 import net.contextfw.web.commons.cloud.session.CloudSessionLifecycleListener;
@@ -24,7 +24,7 @@ public class DemoLifecycleListener extends CloudSessionLifecycleListener {
     private final LocaleService localeService;
     private final CloudSession session;
     
-    private final Provider<HttpContext> httpContext;
+    private final Provider<PageContext> httpContext;
     
     @Override
     public void beforeInitialize() {
@@ -58,7 +58,7 @@ public class DemoLifecycleListener extends CloudSessionLifecycleListener {
     @Inject
     public DemoLifecycleListener(CloudSession session, 
                                  LocaleService localeService,
-                                 Provider<HttpContext> httpContext) {
+                                 Provider<PageContext> httpContext) {
         super(session);
         this.localeService = localeService;
         this.httpContext = httpContext;
