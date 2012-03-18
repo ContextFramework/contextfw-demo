@@ -6,3 +6,4 @@
 /target/*
 /.gitignore~
 /src/test/resources/config.properties
+/deploy
