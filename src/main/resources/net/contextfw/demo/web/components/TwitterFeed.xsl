@@ -39,9 +39,13 @@
 </xsl:template>
 
 <xsl:template match="TwitterFeed.update">
- <replaceInner id="{@id}_tweets">
-  <xsl:call-template name="TwitterFeed" />
- </replaceInner>
+<xsl:if test="tweets/Tweet">
+<prepend id="{@id}_tweets">
+ <div style="display: none">
+  <xsl:apply-templates select="tweets/Tweet" mode="TwitterFeed" />
+ </div>
+ </prepend>
+</xsl:if>
 </xsl:template>
 
 <xsl:template match="TwitterFeed.tweetsUpdate">

@@ -7,3 +7,5 @@
 /.gitignore~
 /src/test/resources/config.properties
 /deploy
+/profiles/tomcat/config.properties
+/tomcat

@@ -1,8 +1,12 @@
 # Common
 
 developmentMode=true
+
 host=http://localhost:8082
 version=snapshot1
+proxied=false
+async.mode=JETTY
+async.webSocketEnabled=true
 
 # Mongo database
 

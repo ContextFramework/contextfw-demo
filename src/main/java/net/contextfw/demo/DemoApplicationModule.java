@@ -23,6 +23,12 @@ import java.util.Properties;
 import net.contextfw.web.application.WebApplicationException;
 import net.contextfw.web.application.WebApplicationModule;
 import net.contextfw.web.application.configuration.Configuration;
+import net.contextfw.web.commons.async.AsyncConf;
+import net.contextfw.web.commons.async.AsyncConf.AsyncMode;
+import net.contextfw.web.commons.async.AsyncServletModule;
+import net.contextfw.web.commons.async.internal.comet.CometService;
+import net.contextfw.web.commons.async.internal.comet.JettyAsyncServlet;
+import net.contextfw.web.commons.async.internal.comet.TomcatAsyncService;
 import net.contextfw.web.commons.cloud.binding.CloudDatabase;
 import net.contextfw.web.commons.cloud.session.CloudSession;
 import net.contextfw.web.commons.cloud.session.MongoCloudSession;
@@ -35,6 +41,7 @@ import net.contextfw.web.commons.minifier.MinifierModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Names;
 import com.mongodb.DB;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
@@ -44,24 +51,43 @@ import com.mycila.inject.jsr250.Jsr250;
 public class DemoApplicationModule extends AbstractModule {
 
     private static final String PROP_DEVELOPMENT_MODE = "developmentMode";
-
+    public static final String WEB_SOCKET_ENABLED = "async.webSocketEnabled";
+    public static final String MODE = "async.mode";
+    
     private final boolean developmentMode;
+    
+    private final AsyncMode asyncMode;
+    
+    private final boolean proxied;
     
     private final Properties properties;
     
+    private final boolean webSocketEnabled;
+    
+    private boolean booleanProperty(String name) {
+        return Boolean.parseBoolean(properties.getProperty(name, "false"));
+    }
+    
     public DemoApplicationModule() {
         properties = loadProperties();
-        developmentMode = Boolean.parseBoolean(
-                properties.getProperty(PROP_DEVELOPMENT_MODE, "false"));
+        developmentMode = booleanProperty(PROP_DEVELOPMENT_MODE);
+        asyncMode = AsyncMode.valueOf(properties.getProperty(MODE, "NONE"));
+        webSocketEnabled = booleanProperty(WEB_SOCKET_ENABLED);
+        proxied = booleanProperty("proxied");
     }
     
     @Override
     protected void configure() {
         
+        Names.bindProperties(binder(), properties);
+        
         Configuration conf = Configuration.getDefaults()
           .add(RESOURCE_PATH, "net.contextfw.demo")
           .add(VIEW_COMPONENT_ROOT_PACKAGE, "net.contextfw.demo.web.views")
           .add(RELOADABLE_CLASSES.includedPackage("net.contextfw.demo.web"))
+          .set(AsyncConf.MODE, asyncMode)
+          .set(AsyncConf.WEB_SOCKET_ENABLED, webSocketEnabled)
+          .set(AsyncConf.MULTI_NODE_SUPPORT, true)
           .set(CLASS_RELOADING_ENABLED, true)
           .set(DEVELOPMENT_MODE, developmentMode)
           .set(XML_PARAM_NAME, "xml")
@@ -69,10 +95,19 @@ public class DemoApplicationModule extends AbstractModule {
           .set(MAX_INACTIVITY.inMinutes(30))
           .set(HOST, properties.getProperty("host"))
           .set(VERSION, properties.getProperty("version"))
+          .set(Configuration.PROXIED, proxied)
           .set(LIFECYCLE_LISTENER.as(DemoLifecycleListener.class))
           .set(XSL_POST_PROCESSOR.as(DemoPostProcessor.class))
           .set(XML_RESPONSE_LOGGER.as(ResponseLogger.class));
-          
+        
+        bind(AsyncMode.class).toInstance(asyncMode);
+        
+        if (asyncMode == AsyncMode.TOMCAT) {
+            bind(CometService.class).to(TomcatAsyncService.class);
+        } else if (asyncMode == AsyncMode.JETTY) {
+            bind(CometService.class).to(JettyAsyncServlet.class);
+        }
+        
         conf = configureMinifier(conf);
         conf = configureI18n(conf);
         conf = configureCloud(conf);
@@ -81,6 +116,10 @@ public class DemoApplicationModule extends AbstractModule {
         install(new MinifierModule(conf));
         install(new LocaleModule(conf));
         install(new WebApplicationModule(conf));
+        
+        if (asyncMode != AsyncMode.NONE) {
+            install(new AsyncServletModule(conf));
+        }
     }
     
     private Configuration configureMinifier(Configuration configuration) {
@@ -130,8 +169,9 @@ public class DemoApplicationModule extends AbstractModule {
     public DB provideDatabase(Mongo mongo) {
         try {
             DB db = mongo.getDB(properties.getProperty("mongodb.database"));
-            if (!developmentMode) {
-                db.authenticate(properties.getProperty("mongodb.userName"), 
+            String userName = properties.getProperty("mongodb.userName", null);
+            if (userName != null) {
+                db.authenticate(userName, 
                                 properties.getProperty("mongodb.password").toCharArray());
             }
             return db;

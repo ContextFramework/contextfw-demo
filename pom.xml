@@ -12,7 +12,7 @@
 	
 	<properties>
 		<jetty.version>7.0.2.v20100331</jetty.version>
-		<contextfw.version>0.8.5</contextfw.version>
+		<contextfw.version>0.8.5-SNAPSHOT</contextfw.version>
 	</properties>
 	
 	<pluginRepositories>
@@ -31,16 +31,16 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-server</artifactId>
-	        	<version>${jetty.version}</version>
-            		<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-webapp</artifactId>
 			<version>${jetty.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>catalina</artifactId>
+            <version>6.0.35</version>
+            <scope>provided</scope>
+        </dependency>
 		<dependency>
 			<groupId>com.mycila</groupId>
 			<artifactId>mycila-guice</artifactId>
@@ -71,6 +71,12 @@
 			<groupId>net.contextfw</groupId>
 			<artifactId>web-commons</artifactId>
 			<version>${contextfw.version}</version>
+		</dependency>
+		<dependency>
+		  <groupId>javax.servlet</groupId>
+		  <artifactId>servlet-api</artifactId>
+		  <version>2.5</version>
+		  <scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -128,6 +134,50 @@
                         <version>1.0-SNAPSHOT</version>
                         <configuration>
                             <port>9090</port>
+                        </configuration>
+                    </plugin>
+                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-war-plugin</artifactId>
+                        <configuration>
+                            <webXml>profiles/tomcat/web.xml</webXml>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>tomcat</id>
+            <build>
+                <finalName>ROOT</finalName>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>2.4.3</version>
+                        <executions>
+                            <execution>
+                                <id>copy-resources</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${basedir}/target/classes</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>profiles/tomcat</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-war-plugin</artifactId>
+                        <configuration>
+                            <webXml>profiles/tomcat/web.xml</webXml>
                         </configuration>
                     </plugin>
                 </plugins>

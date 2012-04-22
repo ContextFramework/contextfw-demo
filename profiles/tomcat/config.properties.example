@@ -1,10 +1,9 @@
-# Common
-
 developmentMode=false
 
-host=
-version=
-proxied=true
+host=http://localhost:8080
+version=snapshot1
+tomcat=true
+proxied=false
 async.mode=TOMCAT
 async.webSocketEnabled=false
 

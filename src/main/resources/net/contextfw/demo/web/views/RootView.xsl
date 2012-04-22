@@ -17,7 +17,7 @@
 		<link rel="stylesheet" type="text/css" href="{$contextPath}/main.css"></link>
 		<script type="text/javascript"><![CDATA[
 jQuery(document).ready(function() {
-contextfw.init("]]><xsl:value-of select="$contextPath" /><![CDATA[", "]]><xsl:value-of select="$pageHandle" /><![CDATA[");
+contextfw.init("]]><xsl:value-of select="$contextPath" /><![CDATA[", "]]><xsl:value-of select="$pageHandle" /><![CDATA[", ]]><xsl:value-of select="@webSocketEnabled" /><![CDATA[);
 ]]><xsl:apply-templates select="//Script" mode="script" /><![CDATA[
 });]]>
         </script>

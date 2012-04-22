@@ -2,47 +2,62 @@ package net.contextfw.demo.web.components;
 
 import net.contextfw.demo.web.service.TweetResult;
 import net.contextfw.demo.web.service.TwitterService;
-import net.contextfw.web.application.component.ComponentRegister;
-import net.contextfw.web.application.scope.Execution;
-import net.contextfw.web.application.scope.PageScopedExecutor;
+import net.contextfw.web.commons.async.AsyncRunnable;
+import net.contextfw.web.commons.async.Function;
 
-import com.google.inject.Provider;
-
-public class TwitterFeedUpdateJob implements Execution {
+public class TwitterFeedUpdateJob extends AsyncRunnable<TwitterFeed> {
+    
+    
     
     private final TwitterService twitterService;
-    
-    private final Provider<ComponentRegister> componentRegister;
-    private final String id;
     private final String search;
-    private final Long sinceId;
+    private Long sinceId;
+    private final String updater;
     
-    public TwitterFeedUpdateJob(String id, 
-                                String search,
+    public TwitterFeedUpdateJob(TwitterFeed feed, String search,
                                 Long sinceId,
-                                Provider<ComponentRegister> componentRegister,
+                                String updater,
                                 TwitterService twitterService) {
-        this.id = id;
-        this.componentRegister = componentRegister;
+        super(feed);
         this.twitterService = twitterService;
         this.search = search;
         this.sinceId = sinceId;
+        this.updater = updater;
     }
     
     @Override
-    public void execute(PageScopedExecutor executor) {
-        final TweetResult[] results = new TweetResult[1];
-        try {
-            results[0] = twitterService.searchTweets(search, sinceId);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        executor.execute(new Runnable() {
-            public void run() {
-                componentRegister.get()
-                    .findComponent(TwitterFeed.class, id)
-                    .addTweets(results[0], search);
+    public void run() {
+        long maxAge = System.currentTimeMillis() + 30 * 1000;
+        boolean isRunning = true;
+        while (isRunning) {
+            try {
+                //Tracker.debug("Search:" + search);
+                final TweetResult[] results = new TweetResult[1];
+                results[0] = twitterService.searchTweets(search, sinceId);
+                AsyncAction action = executeScoped(new Function<TwitterFeed, AsyncAction>() { 
+                    public AsyncAction apply(TwitterFeed in) {
+                                return in.addTweetsAsync(results[0], search, updater);
+                            }});
+                //Tracker.debug("AsyncAction: " + action);
+                
+                if (action == AsyncAction.DIE) {
+                    return;
+                } else if (maxAge < System.currentTimeMillis() || !results[0].getTweets().isEmpty()) {
+                    isRunning = false;
+                } else {
+                    //Tracker.debug("Sleeping: "+ search);
+                    sinceId = results[0].getSinceId();
+                     Thread.sleep(5000);
+                }
+                //Tracker.debug("request refres");
+            } catch (InterruptedException e) {
+                // Ignore
+            } catch (Exception e) {
+                e.printStackTrace();
+                isRunning = false;
             }
-        });
+        }
+        //Tracker.debug("request refres");
+        requestRefresh();
     }
 }

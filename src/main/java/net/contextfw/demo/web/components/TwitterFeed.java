@@ -1,125 +1,80 @@
 package net.contextfw.demo.web.components;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import net.contextfw.demo.web.service.TweetResult;
 import net.contextfw.demo.web.service.TwitterService;
 import net.contextfw.web.application.component.Attribute;
-import net.contextfw.web.application.component.ComponentRegister;
 import net.contextfw.web.application.component.Element;
+import net.contextfw.web.application.lifecycle.AfterBuild;
+import net.contextfw.web.application.lifecycle.BeforeBuild;
 import net.contextfw.web.application.remote.Remoted;
-import net.contextfw.web.application.scope.Execution;
 import net.contextfw.web.application.scope.Provided;
 
 import org.apache.commons.lang.StringUtils;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 
 public class TwitterFeed extends JsComponent {
 
     @Provided
     private final TwitterService twitterService;
     
-    private final Provider<ComponentRegister> componentRegister;
-    
     @Attribute
     private boolean tweetsVisible = false;
     
-    private Long sinceId = null;
+    private Long sinceId = 0L;
     
     private String search = null;
     
-    private boolean updating = false;
-
-    private List<Tweet> newTweets = null;
+    private boolean immediately = false;
     
-    @Element(name="tweets", onCreate=false, onUpdate=false)
-    public List<Tweet> newTweets() {
-        List<Tweet> rv = newTweets;
-        newTweets = null;
-        return rv;
-    }
+    private String currentUpdater;
     
-    @Element(name="tweets")
-    public List<Tweet> allTweets() {
-        if (tweetsVisible && search != null) {
-            TweetResult result = twitterService.searchTweets(search, null);
-            this.setSinceId(result.getSinceId());
-            return result.getTweets();
-        } else {
-            return null;
-        }
-    }
+    @Element
+    private List<Tweet> tweets = new ArrayList<Tweet>();
     
     @Inject
-    public TwitterFeed(TwitterService twitterService,
-                       Updater updater,
-                       Provider<ComponentRegister> componentRegister) {
-        
+    public TwitterFeed(TwitterService twitterService) {
         this.twitterService = twitterService;
-        this.componentRegister = componentRegister;
-        
-        updater.addTask(new UpdaterTask() {
-            public Execution run() {
-                return updateTweets();
-            }
-        });
     }
     
-    @Remoted
-    public void showTweets() {
-        tweetsVisible = true;
-        refresh();
-    }
-    
-    public TwitterFeedUpdateJob updateTweets() {
-        if (tweetsVisible && newTweets != null) {
+    @BeforeBuild
+    public void beforeBuild() {
+        if (!tweets.isEmpty()) {
             addScript(new JsUpdate(this, "tweetsUpdated"));
-            partialRefresh(
-                        "tweetsUpdate", 
-                        "newTweets", 
-                        "tweetsVisible", 
-                        "scripts");
-        }
-        return getUpdateJob();
-    }
-    
-    private TwitterFeedUpdateJob getUpdateJob() {
-        if (!updating && search != null) {
-            updating = true;
-            return new TwitterFeedUpdateJob(getId(),
-                            search, 
-                            sinceId,
-                            componentRegister, 
-                            twitterService);
-        } else {
-            return null;
         }
     }
     
-    public void addTweets(TweetResult result, String search) {
-        updating = false;
-        if (result != null && search.equals(this.search) && this.sinceId != result.getSinceId()) {
-            if (newTweets == null) {
-                newTweets = result.getTweets();
-            } else {
-                newTweets.addAll(newTweets);
-                if (newTweets.size() > 100) {
-                    newTweets = newTweets.subList(0, 100);
-                }
-            }
-            this.setSinceId(result.getSinceId());
+    @AfterBuild
+    public void afterBuild() {
+        tweets.clear();
+        if (tweetsVisible) {
+            currentUpdater = twitterService.createUpdateJob(this, search, sinceId, immediately);
+            immediately = false;
         }
+    }
+        
+    public AsyncAction addTweetsAsync(TweetResult result, String search, String updater) {
+        if (!currentUpdater.equals(updater)) {
+           return AsyncAction.DIE;
+        }
+        if ((search == null && this.search == null) || search.equals(this.search)) {
+            tweets.addAll(result.getTweets());
+            sinceId = result.getSinceId();
+        }
+        return AsyncAction.CONTINUE;
     }
     
     @Remoted
-    public TwitterFeedUpdateJob setSearch(String search) {
-        updating = false;
+    public void setSearch(String search) {
         this.search = StringUtils.trimToNull(search);
         tweetsVisible = true;
+        immediately = true;
+        sinceId = 0L;
+        addScript(new JsUpdate(this, "searchUpdated"));
         refresh();
-        return getUpdateJob();
     }
 
     public Long getSinceId() {
@@ -132,5 +87,9 @@ public class TwitterFeed extends JsComponent {
     
     public String getSearch() {
         return search;
+    }
+
+    public boolean isTweetsVisible() {
+        return tweetsVisible;
     }
 }

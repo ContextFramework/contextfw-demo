@@ -3,9 +3,14 @@ contextfw = {
 	updateUrl:  null,
 	refreshUrl: null,
 	removeUrl:  null,
+	ws:         null,
+	wsIsOpen:   false,
+	webSocketEnabled: false,
+	context:    null,
 
-	init: function(context, handle) {
+	init: function(context, handle, webSocketEnabled) {
 		this.handle = handle;
+		this.context = context;
 		this.updateUrl = context + "/contextfw-update/"+handle;
 		this.refreshUrl = context + "/contextfw-refresh/"+handle;
 		this.removeUrl = context + "/contextfw-remove/"+handle;
@@ -15,6 +20,37 @@ contextfw = {
 		jQuery(window).unload( function () {
 		    contextfw.unload(); 
 		});
+		
+		if (webSocketEnabled && window.WebSocket != undefined) {
+		  this.webSocketEnabled = true;
+		  this.openWebSocket();
+		} else {
+	        setTimeout(function() {
+	          contextfw.doAsync()  
+	        }, 1500);
+		}
+	},
+	
+	doAsync: function() {
+	  var self = this;
+	  var ts = new Date().getTime();
+	  jQuery.ajax({
+	    type: "GET",
+	    url: this.context+ "/async/"+ts+"?handle="+this.handle+"&ts="+ts,
+	    dataType: "text",
+	    complete: function(jqXHR, textStatus) {
+	      if (textStatus == "success") {
+	        self.doAsync();
+	      } else {
+	        setTimeout(function() {
+              contextfw.doAsync()  
+            }, 10000);
+	      }
+	    },
+	    success: function(data, textStatus) {
+	      contextfw._handleResponse(data)
+	    }
+	  });
 	},
 
 	refresh: function() {
@@ -27,6 +63,8 @@ contextfw = {
 	
 	_call: function(elId, method, args, beforeCall, afterCall) {
 		
+	    var self = this;
+	    
 		if (jQuery.isFunction(beforeCall)) beforeCall();
 		
 		var params = {};
@@ -40,10 +78,47 @@ contextfw = {
 	      }
 		}
 
-		jQuery.post(this.updateUrl+"/"+elId+"/"+method, params, function(data, textStatus) {
-			contextfw._handleResponse(data);
-			if (jQuery.isFunction(afterCall)) afterCall();
-	    }, "text");
+		if (this.webSocketEnabled) {
+		  var msg = this.handle 
+		          + "&" + elId 
+		          + "&"+method;
+		  for (prop in params) {
+		    msg = msg + "&" + escape(params[prop]);
+		  }
+		  
+		  this.openWebSocket(function(ws) {
+		    ws.send(msg);
+		  });
+		} else {
+	        jQuery.post(this.updateUrl+"/"+elId+"/"+method, params, function(data, textStatus) {
+	            contextfw._handleResponse(data);
+	            if (jQuery.isFunction(afterCall)) afterCall();
+	        }, "text");		  
+		}
+	},
+	
+	openWebSocket : function(callback) {
+	  var self = this;
+	  if (!this.wsIsOpen) {
+        this.ws = new WebSocket('ws://'+window.location.hostname+':8083/websocket?handle=' + this.handle);
+        this.ws.onopen = function() {
+          if (jQuery.isFunction(callback)) {
+            callback(self.ws);
+          }
+          self.wsIsOpen = true;
+        };
+        this.ws.onclose = function() { 
+          self.wsIsOpen = false;
+        };
+        this.ws.onmessage = function(msg) { 
+          contextfw._handleResponse(msg.data); 
+          if (jQuery.isFunction(afterCall)) afterCall();
+        };
+	  } else {
+	    if (jQuery.isFunction(callback)) {
+          callback(self.ws);
+        }
+	  }
 	},
 	
 	call: function(elId, method) {

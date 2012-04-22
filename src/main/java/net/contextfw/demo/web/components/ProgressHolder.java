@@ -3,34 +3,30 @@ package net.contextfw.demo.web.components;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.contextfw.web.application.component.ComponentRegister;
+import net.contextfw.demo.services.CommonService;
 import net.contextfw.web.application.component.Element;
 import net.contextfw.web.application.remote.Remoted;
+import net.contextfw.web.application.scope.Provided;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 
 public class ProgressHolder extends JsComponent {
 
     @Inject
-    private Provider<ComponentRegister> componentRegister;
-    
-    @Inject
-    private Updater updater;
+    @Provided
+    private CommonService commonService;
     
     @Element
     private List<ProgressIndicator> indicators = new ArrayList<ProgressIndicator>();
 
     @Remoted
-    public Job addProgress(String name, long duration) {
+    public void addProgress(String name, long duration) {
         if (indicators.size() < 10 && duration > 0 && duration <= 30) {
             long now = System.currentTimeMillis();
-            ProgressIndicator indicator = registerChild(new ProgressIndicator(name, updater));
+            ProgressIndicator indicator = registerChild(new ProgressIndicator(name));
             indicators.add(indicator);
+            commonService.executeAsync(new Job(indicator, now, duration*1000), 0);
             refresh();
-            return new Job(indicator.getId(), now, duration*1000, componentRegister);
-        } else {
-            return null;
         }
     }
     

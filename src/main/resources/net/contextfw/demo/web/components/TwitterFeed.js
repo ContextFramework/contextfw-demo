@@ -7,13 +7,13 @@ var TwitterFeed = Component.extend({
       self.call("setSearch", function() {
         self.el("search").slideUp();
         self.el("searching").slideDown();
-      },
-      function() {
-        self.el("search").slideDown();
-        self.el("searching").slideUp();
       })(self.el("search").val());
       return false;
-    })
+    });
+  },
+  searchUpdated : function() {
+    this.el("search").slideDown();
+    this.el("searching").slideUp();
   },
   tweetsUpdated : function() {
     this.el().find(".feed").find("div").slideDown("slow");
